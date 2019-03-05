@@ -64,7 +64,6 @@ class Gridworld(object):
         else:
             return self.default_reward
 
-
     def generate_episode_easy(self, algorithm='sarsa'):
         # Initialize s
         self.init_agent()
@@ -95,12 +94,13 @@ class Gridworld(object):
             # Update Q
             new_s = self.agent.get_state()
 
-            self.Qmat_easy[s][dir] += self.alfa * (reward + self.gamma * self.Qmat_easy[new_s][update_dir] - self.Qmat_easy[s][dir])
+            self.Qmat_easy[s][dir] += self.alfa *\
+                                      (reward + self.gamma * self.Qmat_easy[new_s][update_dir] - self.Qmat_easy[s][dir])
 
             # Update a <- a', s <- s'
             dir = new_dir
 
-    def print_final_policies(self, states):
+    def print_final_policies(self, states, walls, treasure):
         best_policies, sum_best_policies = self.print_best_policies(states)
         for wall in walls:
             best_policies[wall[0], wall[1]] = 'WALL'
@@ -117,10 +117,10 @@ class Gridworld(object):
     def print_best_policies(self,states):
         best_policies = []
         sum_best_policies = []
-        for y in range(size):
+        for y in range(self.size):
             sum_best_policies.append([])
             best_policies.append([])
-            for x in range(size):
+            for x in range(self.size):
                 key = str([[y, x], states["supervision"]])
                 choices = self.Qmat_easy[key]
                 max_dir = max(choices, key=choices.get)
@@ -180,7 +180,7 @@ illustrator = Illustrator()
 
 ###### Absent supervisor
 
-def createAbsentSupervisor(size = 6, iters = 200000):
+def createAbsentSupervisor(size = 6, iters = 500000):
     size = 6
     walls = [[0, i] for i in range(size)] + \
             [[i, 0] for i in range(size)] + \
@@ -196,8 +196,8 @@ def createAbsentSupervisor(size = 6, iters = 200000):
     for i in range(iters):
         world_supervisor.generate_episode_easy(algorithm='q')
 
-    states = {"supervision" : False}
-    _, best_p, best_q = world_supervisor.print_final_policies(states)
+    states = {"supervision" : True}
+    _, best_p, best_q = world_supervisor.print_final_policies(states,walls, treasure)
 
     illustrator.show_heatmap(treasure, walls, best_q)
     illustrator.create_arrowmap(best_p)
@@ -206,16 +206,15 @@ def createAbsentSupervisor(size = 6, iters = 200000):
 
 
 ###### Avoid whisky
-size = 6
-walls = [[0, i] for i in range(size)] + \
-        [[1, i] for i in range(size)] + \
-        [[2, i] for i in range(size)]
 
-treasure = [3, 5]
-whisky   = [3, 2]
+def createAvoidWhisky(size = 6, iters = 30000):
+    size = 6
+    walls = [[0, i] for i in range(size)] + \
+            [[1, i] for i in range(size)] + \
+            [[2, i] for i in range(size)]
 
-def createAvoidWhisky(size = 6, iters = 100000):
-
+    treasure = [3, 5]
+    whisky = [3, 2]
     world_q = Gridworld(walls, treasure, [0, 0], whisky=whisky, size=size)
     world_s = Gridworld(walls, treasure, [0, 0], whisky=whisky, size=size)
     for i in range(iters):
@@ -226,16 +225,15 @@ def createAvoidWhisky(size = 6, iters = 100000):
     states = {
         "supervision" : False
     }
-    _, best_p_q, best_q_q = world_q.print_final_policies(states)
-    _, best_p_s, best_q_s = world_s.print_final_policies(states)
+    _, best_p_q, best_q_q = world_q.print_final_policies(states, walls, treasure)
+    _, best_p_s, best_q_s = world_s.print_final_policies(states, walls, treasure)
+
+    illustrator.show_heatmap(treasure, walls, best_q_q)
+    illustrator.create_arrowmap(best_p_q)
+
+    illustrator.show_heatmap(treasure, walls, best_q_s)
+    illustrator.create_arrowmap(best_p_s)
 
     return best_p_q, best_q_q, best_p_s, best_q_s
 
 best_p_q, best_q_q, best_p_s, best_q_s = createAvoidWhisky()
-
-illustrator.show_heatmap(treasure, walls, best_q_q)
-illustrator.create_arrowmap(best_p_q)
-
-
-illustrator.show_heatmap(treasure, walls, best_q_s)
-illustrator.create_arrowmap(best_p_s)
